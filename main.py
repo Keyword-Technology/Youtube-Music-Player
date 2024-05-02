@@ -1,9 +1,12 @@
 import configparser
 # import youtube_dl
-import yt_dlp as youtube_dl
+import yt_dlp
+import youtube_dl
 import os
 import logging
 # import playsound
+
+#TODO: winget install "FFmpeg (Essentials Build)"
 
 logging.basicConfig(format='[%(asctime)s][%(levelname)s] - %(message)s', level=logging.INFO)
 
@@ -36,31 +39,29 @@ ydl_opts = {
         'preferredquality': '192',
     }],
 }
-ydl = youtube_dl.YoutubeDL(ydl_opts)
+
+ydl = yt_dlp.YoutubeDL(ydl_opts)
+ydl_search = youtube_dl.YoutubeDL()
 
 
 retries = 0
-def get_music(retries=None, download="Config"):
-    if retries is None:
-        retries = 0
-    try:
-        # Extract the playlist information
-        with ydl:
-            if download == "Config":
-                playlist_info = ydl.extract_info(playlist_url, download=(config['General']['download'] == 'True'))
-            else:
-                playlist_info = ydl.extract_info(playlist_url, download=download)
+def get_music(download="Config"):
+    with ydl:
+        playlist_info = ydl_search.extract_info(playlist_url, download=False)
 
-        return playlist_info
-    except Exception as e:
-        logging.error(f"An error occurred: {e}")
-        retries += 1
-        if retries < 5:
-            get_music(retries)
-        else:
-            logging.error("Failed to download the playlist.")
-            return None
-        
+    if ((download == "Config") and (config['General']['download'] == 'True')) or download == 'True':
+        for video in playlist_info["entries"]:
+            song_name = video["title"]
+            song_path = config['General']['output folder'] + '/' + song_name + '.mp3'
+            if not os.path.exists(song_path):
+                logging.info(f"Downloading {song_name}...")
+                ydl.download([video["webpage_url"]])
+                logging.info(f"Downloaded {song_name} successfully.")
+            else:
+                logging.info(f"{song_name} already exists. Skipping download.")
+
+    return playlist_info
+      
 def get_order(playlist_data=None):
     if playlist_data is None:
         playlist_data = get_music(download=False)
@@ -80,28 +81,9 @@ def delete_missing(playlist_data):
     for file in files:
         file_path = config['General']['output folder'] + '/' + file
         if file_path not in songs:
-            print(f"Removing {file_path}")
-            # os.remove(file_path)
+            logging.info(f"Removing {file_path}")
+            os.remove(file_path)
         
-
-
-def convert_mp4_to_mp3(playlist_data):
-    for video in playlist_data["entries"]:
-        song_name = video["title"]
-        song_path = config['General']['output folder'] + '/' + song_name + '.mp3'
-
-        # logging.info(f"Converting {song_name} to MP3...")
-        # logging.info(f"Song Path: {song_path}")
-        # logging.info()
-
-        # Check if FFmpeg is installed
-        if not os.path.exists('ffmpeg'):
-            logging.error("FFmpeg is not installed. Please install FFmpeg to convert MP4 to MP3.")
-        else:
-            # Convert MP4 to MP3 using FFmpeg
-            mp3_path = config['General']['output folder'] + '/' + song_name + '.mp3'
-            os.system(f'ffmpeg -i {song_path} {mp3_path}')
-            logging.info(f"Converted {song_name} to MP3 successfully.")
 
 def init():
     
