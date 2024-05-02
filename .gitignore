@@ -153,3 +153,4 @@ cython_debug/
 config.ini
 *.mp4
 *.part
+*.mp3
