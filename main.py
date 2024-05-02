@@ -23,9 +23,11 @@ if not config.read('config.ini'):
 
 # Define the YouTube playlist URL
 playlist_url = config['General']['playlist link']
-
 # Create a YouTubeDL object
-ydl = youtube_dl.YoutubeDL({})
+ydl_opts = {
+    'outtmpl': config['General']['output folder'] + '/%(title)s.%(ext)s'
+}
+ydl = youtube_dl.YoutubeDL(ydl_opts)
 
 # Extract the playlist information
 with ydl:
