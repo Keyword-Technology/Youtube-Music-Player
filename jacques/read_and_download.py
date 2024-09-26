@@ -3,7 +3,8 @@ from pprint import pprint
 import requests
 import tqdm
 
-har_file = r"jacques\loveworldworship.com.har"
+har_file = r"loveworldworship.com.har"
+save_path = r"downloads"
 
 class Song:
     def __init__(self, url, name, log_data=None):
@@ -14,14 +15,19 @@ class Song:
         self.name = self.name.replace('+', ' ')
         self.url = requests.utils.unquote(self.url)
 
-
-
-    def download(self):
+    def download(self, save_path=save_path):
         response = requests.get(self.url)
         if response.status_code == 200:
-            with open(f"{self.name}.mp3", "wb") as f:
-                f.write(response.content)
-            print(f"Downloaded {self.name}.mp3")
+            file_path = f"{save_path}/{self.name}.mp3"
+            with open(file_path, "wb") as f:
+                total_size = int(response.headers.get('content-length', 0))
+                block_size = 1024
+                progress_bar = tqdm.tqdm(total=total_size, unit='B', unit_scale=True)
+                for data in response.iter_content(block_size):
+                    progress_bar.update(len(data))
+                    f.write(data)
+                progress_bar.close()
+                # print(f"Downloaded {self.name}.mp3")
         else:
             print(f"Failed to download {self.name}.mp3")
 
@@ -53,7 +59,7 @@ class ReadSongs:
     def download_songs(self):
         for song in self.songs:
             print(f"Downloading {song.name}")
-            song.download()
+            song.download(save_path=save_path)
 
 if __name__ == '__main__':
     read_songs = ReadSongs(har_file)
